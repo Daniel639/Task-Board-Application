@@ -10,7 +10,8 @@
     integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous" />
   <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css" />
-  <link rel="stylesheet" href="./assets/css/style.css"/>
+
+  <link rel="stylesheet" href="./assets/css/style.css" />
   <title>Task Board</title>
 </head>
 
@@ -23,63 +24,67 @@
     <div class="text-center mb-5">
       <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#formModal">Add Task</button>
     </div>
-
+    
     <div class="modal fade" id="formModal" tabindex="-1" aria-labelledby="formModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="formModalLabel">Add New Task</h5>
+            <h5 class="modal-title" id="formModalLabel">Add Task</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            <form id="addTaskForm">
-              <label for="taskTitle">Title:</label>
-              <input type="text" id="taskTitle" name="taskTitle" class="form-control" required><br><br>
-              <label for="taskDescription">Description:</label>
-              <textarea id="taskDescription" name="taskDescription" class="form-control"></textarea><br><br>
-              <label for="taskDueDate">Due Date:</label>
-              <input type="date" id="taskDueDate" name="taskDueDate" class="form-control" required><br><br>
+            <form id="taskForm">
+              <div class="mb-3">
+                <label for="taskTitle" class="form-label">Title</label>
+                <input type="text" class="form-control" id="taskTitle" required>
+              </div>
+              <div class="mb-3">
+                <label for="taskDescription" class="form-label">Description</label>
+                <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                <label for="taskDeadline" class="form-label">Deadline</label>
+                <input type="date" class="form-control" id="taskDeadline" required pattern="\d{2}/\d{2}/\d{4}">              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Add Task</button>
+              </div>
             </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="submit" form="addTaskForm" class="btn btn-primary">Save Task</button>
           </div>
         </div>
       </div>
     </div>
-
-
-    <div class="row swim-lanes text-center justify-content-between">
+      
+    <div class="task-board row swim-lanes text-center justify-content-between">
       <div class="col-12 col-lg-4 d-flex">
-        <div id="to-do" class="card border-light mb-3 lane flex-grow-1">
+        <div id="to-do" class="task-column card border-light mb-3 lane flex-grow-1">
           <div class="card-header bg-white">
             <h2 class="card-title mb-1">To Do</h2>
           </div>
-          <div class="card-body bg-light">
-            <div id="todo-cards"></div>
+          <div id="todo-cards" class="card-body bg-light">
+            <!-- Task cards will be dynamically added here -->
           </div>
         </div>
       </div>
       <div class="col-12 col-lg-4 d-flex">
-        <div id="in-progress" class="card border-light mb-3 lane flex-grow-1">
+        <div id="in-progress" class="task-column card border-light mb-3 lane flex-grow-1">
           <div class="card-header bg-white">
             <h2 class="card-title mb-1">In Progress</h2>
           </div>
-          <div class="card-body bg-light">
-            <div id="in-progress-cards"></div>
+          <div id="in-progress-cards" class="card-body bg-light">
+            <!-- Task cards will be dynamically added here -->
           </div>
         </div>
+      </div>
+      <div class="col-12 col-lg-4 d-flex">
+        <div id="done" class="task-column card border-light mb-3 lane flex-grow-1">
+          <div class="card-header bg-white">
+            <h2 class="card-title mb-1">Done</h2>
+          </div>
+          <div id="done-cards" class="card-body bg-light">
+            <!-- Task cards will be dynamically added here -->
+          </div>
         </div>
-        <div class="col-12 col-lg-4 d-flex">
-          <div id="done" class="card border-light mb-3 lane flex-grow-1">
-            <div class="card-header bg-white">
-              <h2 class="card-title mb-1">Done</h2>
-            </div>
-            <div class="card-body bg-light">
-              <div id="done-cards"></div>
-          </div>
-          </div>
       </div>
     </div>
   </div>
