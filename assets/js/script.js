@@ -4,8 +4,9 @@ let nextId = JSON.parse(localStorage.getItem("nextId")) || 1;
 
 // Function to generate a unique task id
 function generateTaskId() {
-    localStorage.setItem("nextId", JSON.stringify(nextId + 1));
-    return nextId++;
+    nextId++;
+    localStorage.setItem("nextId", JSON.stringify(nextId));
+    return nextId;
 }
 
 // Function to format date to mm/dd/yyyy
@@ -41,10 +42,7 @@ function createTaskCard(task) {
     deleteButton.setAttribute('data-task-id', task.id);
     deleteButton.onclick = handleDeleteTask;
 
-    cardBody.appendChild(title);
-    cardBody.appendChild(description);
-    cardBody.appendChild(deadline);
-    cardBody.appendChild(deleteButton);
+    cardBody.append(title, description, deadline, deleteButton);
     card.appendChild(cardBody);
 
     return card;
@@ -60,22 +58,12 @@ function renderTaskList() {
         console.error("Could not find one or more task list elements. Please check your HTML.");
         return;
     }
-    
-    // Clear existing tasks to prevent duplication
-    todoList.innerHTML = '';
-    inProgressList.innerHTML = '';
-    doneList.innerHTML = '';
-    
-    if (!Array.isArray(taskList) || taskList.length === 0) {
-        console.log("No tasks to render or tasks is not an array.");
-        return;
-    }
-    
-    // Loop through each task and create a card
+
+    [todoList, inProgressList, doneList].forEach(list => list.innerHTML = '');
+
     taskList.forEach(task => {
         const taskCard = createTaskCard(task);
-        // Add task to appropriate list based on its status
-        switch(task.status) {
+        switch(task.status.toLowerCase()) {  // Handle case-insensitivity
             case 'to-do':
             case 'todo':
                 todoList.appendChild(taskCard);
@@ -88,49 +76,122 @@ function renderTaskList() {
                 break;
             default:
                 console.error(`Unknown task status: ${task.status}`);
-                // Default to 'to-do' if status is unknown
-                todoList.appendChild(taskCard);
         }
     });
-
-    initializeDragAndDrop();
-    updateTaskColors();
+   initializeDragAndDrop();
+   updateTaskColors();
 }
 
+// Function to handle adding a task
 function handleAddTask(event) {
     event.preventDefault();
-    
     const titleInput = document.getElementById('taskTitle').value.trim();
     const descriptionInput = document.getElementById('taskDescription').value.trim();
     const deadlineInput = document.getElementById('taskDeadline').value;
-    
+
     if (titleInput && descriptionInput && deadlineInput) {
         const newTask = {
             id: generateTaskId(),
             title: titleInput,
             description: descriptionInput,
             deadline: deadlineInput,
-            status: 'to-do'
+            status: 'to-do' // Start in 'to-do'
         };
-    
+
         taskList.push(newTask);
         localStorage.setItem("tasks", JSON.stringify(taskList));
-    
         renderTaskList();
-    
-        document.getElementById('taskTitle').value = '';
-        document.getElementById('taskDescription').value = '';
-        document.getElementById('taskDeadline').value = '';
-        
         $('#formModal').modal('hide');
+        // Clear the input fields
+        document.getElementById("taskTitle").value = "";
+        document.getElementById("taskDescription").value = "";
+        document.getElementById("taskDeadline").value = "";
     } else {
         alert('Please fill in all fields to add a task.');
     }
 }
+// ... (Your code for deleting tasks, updating colors, and other functions)
 
+// Function to handle task drop
+function handleDrop(event, ui) {
+    const taskId = ui.draggable.attr('data-id');
+    let targetStatus = $(event.target).attr('id').replace('-cards', '');
+    if (targetStatus === 'todo') {
+        targetStatus = 'to-do'; // Normalize 'todo' to 'to-do'
+    }
+    
+    if (taskId && targetStatus) {
+        // Delay the removal of the task card using setTimeout to ensure it's attached to the DOM
+        setTimeout(() => {
+            updateTaskStatus(taskId, targetStatus);
+            if (ui.draggable.length) {
+                ui.draggable.remove();
+            } else {
+                console.error('Dragged element not found in the DOM.'); // Optional error handling
+            }
+        }, 0); // A minimal delay (0ms) is usually enough
+    } else {
+        console.error('Missing task ID or target status.');
+    }
+}
+
+// Document ready function
+$(document).ready(function () {
+    renderTaskList();
+    initializeSortable();
+    $('#taskForm').submit(handleAddTask);
+
+    initializeDragAndDrop(); 
+});
+
+// Function to initialize drag and drop functionality
+function initializeDragAndDrop() {
+    $('.task-card').draggable({
+        opacity: 0.7,
+        zIndex: 100,
+        helper: 'clone',
+        appendTo: 'body',
+        connectToSortable: '.card-body',
+        start: function(_event, ui) {
+            $(ui.helper).addClass('ui-draggable-helper');
+        },
+        stop: function(_event, ui) {
+            ui.helper.remove();
+        }
+    });
+}
+
+// Function to initialize sortable functionality
+function initializeSortable() {
+    $('.card-body').sortable({
+        connectWith: '.card-body',
+        cursor: 'move',
+        placeholder: 'card-placeholder',
+        forcePlaceholderSize: true,
+        receive: function(_event, ui) {
+            const taskId = ui.item.attr('data-id');
+            const newStatus = $(this).attr('id').replace('-cards', '');
+            updateTaskStatus(taskId, newStatus);
+        }
+    }).droppable({
+        accept: '.task-card',
+        drop: handleDrop
+    });
+}
+
+// Function to update task status after drag and drop
+function updateTaskStatus(taskId, newStatus) {
+    const taskIndex = taskList.findIndex(task => task.id.toString() === taskId);
+    if (taskIndex !== -1) {
+        taskList[taskIndex].status = newStatus;
+        localStorage.setItem("tasks", JSON.stringify(taskList));
+        renderTaskList();
+    }
+}
+
+// Function to handle deleting a task
 function handleDeleteTask(event) {
     const taskId = event.target.getAttribute('data-task-id');
-
     if (taskId) {
         taskList = taskList.filter(task => task.id.toString() !== taskId);
         localStorage.setItem("tasks", JSON.stringify(taskList));
@@ -140,29 +201,8 @@ function handleDeleteTask(event) {
     }
 }
 
-function handleDrop(event, ui) {
-    const taskId = ui.draggable.attr('data-id');
-    let targetStatus = $(event.target).attr('id').replace('-cards', '');
-    
-    // Convert 'todo' to 'to-do' if necessary
-    if (targetStatus === 'todo') {
-        targetStatus = 'to-do';
-    }
 
-    if (taskId && targetStatus) {
-        const taskIndex = taskList.findIndex(task => task.id.toString() === taskId);
-        if (taskIndex !== -1) {
-            taskList[taskIndex].status = targetStatus;
-            localStorage.setItem("tasks", JSON.stringify(taskList));
-            renderTaskList();
-        } else {
-            console.error('Task not found.');
-        }
-    } else {
-        console.error('Missing task ID or target status.');
-    }
-}
-
+// Function to update task colors based on deadlines
 function updateTaskColors() {
     const today = new Date();
     const threeDaysFromNow = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
@@ -171,47 +211,12 @@ function updateTaskColors() {
         const taskElement = document.querySelector(`.task-card[data-id="${task.id}"]`);
         if (taskElement) {
             const deadline = new Date(task.deadline);
-            
+            taskElement.classList.remove('near-deadline', 'overdue');
             if (deadline < today) {
                 taskElement.classList.add('overdue');
-                taskElement.classList.remove('near-deadline');
             } else if (deadline <= threeDaysFromNow) {
                 taskElement.classList.add('near-deadline');
-                taskElement.classList.remove('overdue');
-            } else {
-                taskElement.classList.remove('near-deadline', 'overdue');
             }
         }
     });
 }
-
-function initializeDragAndDrop() {
-    $('.task-card').draggable({
-        connectToSortable: '.card-body',
-        cursor: 'move',
-        helper: 'clone',
-        revert: 'invalid'
-    });
-
-    $('.card-body').sortable({
-        connectWith: '.card-body',
-        cursor: 'move',
-        placeholder: 'card-placeholder',
-        forcePlaceholderSize: true,
-        remove: function(_event, ui) {
-            ui.item.clone().appendTo(this);
-            $(this).sortable('cancel');
-        },
-        receive: function(_event, ui) {
-            ui.sender.sortable('cancel');
-        }
-    }).droppable({
-        accept: '.task-card',
-        drop: handleDrop
-    });
-}
-
-$(document).ready(function () {
-    renderTaskList();
-    $('#taskForm').submit(handleAddTask);
-});
